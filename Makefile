@@ -8,13 +8,17 @@ SOURCE_DIR ?= .
 SOURCES := $(shell find $(SOURCE_DIR) -path $(SOURCE_DIR)/vendor -prune -o -name '*.go' -print)
 DESIGN_DIR=design
 DESIGNS := $(shell find $(SOURCE_DIR)/$(DESIGN_DIR) -path $(SOURCE_DIR)/vendor -prune -o -name '*.go' -print)
+ALL_PKGS_EXCLUDE_PATTERN = 'vendor\|app\|tool\/cli\|design\|client\|test'
+
+# By default reduce the amount of log output from tests
+F8_LOG_LEVEL ?= error
 
 # declares variable that are OS-sensitive
 SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 ifeq ($(OS),Windows_NT)
-include $(SELF_DIR)Makefile.win
+include $(SELF_DIR)/.make/Makefile.win
 else
-include $(SELF_DIR)Makefile.lnx
+include $(SELF_DIR)/.make/Makefile.lnx
 endif
 
 # This is a fix for a non-existing user in passwd file when running in a docker
@@ -48,29 +52,35 @@ REGISTRY_IMAGE = ${PROJECT_NAME}
 
 ifeq ($(TARGET),rhel)
 	REGISTRY_URL := ${REGISTRY_URI}/openshiftio/rhel-${REGISTRY_NS}-${REGISTRY_IMAGE}
-	DOCKERFILE := Dockerfile.rhel
+	DOCKERFILE := ./.make/Dockerfile.rhel
 else
 	REGISTRY_URL := ${REGISTRY_URI}/openshiftio/${REGISTRY_NS}-${REGISTRY_IMAGE}
-	DOCKERFILE := Dockerfile
+	DOCKERFILE := ./.make/Dockerfile
 endif
 
 $(BUILD_DIR):
 	mkdir $(BUILD_DIR)
 
 .PHONY: build-linux $(BUILD_DIR)
-build-linux: makefiles prebuild-check deps generate ## Builds the Linux binary for the container image into bin/ folder
+build-linux: prebuild-check deps generate ## Builds the Linux binary for the container image into bin/ folder
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -v $(LDFLAGS) -o $(BUILD_DIR)/$(PROJECT_NAME)
 
-image: clean-artifacts build-linux
+.PHONY: image
+image: clean-artifacts build-linux ## Build the docker image
 	docker build -t $(REGISTRY_URL) \
 	  --build-arg BUILD_DIR=$(BUILD_DIR)\
 	  --build-arg PROJECT_NAME=$(PROJECT_NAME)\
-	  -f $(VENDOR_DIR)/github.com/fabric8-services/fabric8-common/makefile/$(DOCKERFILE) .
+	  -f $(DOCKERFILE) .
+
+.PHONY: test-unit
+test-unit: prebuild-check generate $(SOURCES) ## Runs the unit tests and WITHOUT producing coverage files for each package.
+	$(call log-info,"Running test: $@")
+	$(eval TEST_PACKAGES:=$(shell go list ./... | grep -v $(ALL_PKGS_EXCLUDE_PATTERN)))
+	AUTH_DEVELOPER_MODE_ENABLED=1 AUTH_RESOURCE_UNIT_TEST=1 F8_LOG_LEVEL=$(F8_LOG_LEVEL) go test $(GO_TEST_VERBOSITY_FLAG) $(TEST_PACKAGES)
 
 # -------------------------------------------------------------------
 # help!
 # -------------------------------------------------------------------
-
 .PHONY: help
 help: ## Prints this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort
@@ -92,7 +102,7 @@ $(TMP_PATH):
 	mkdir -p $(TMP_PATH)
 
 .PHONY: prebuild-check
-prebuild-check: $(TMP_PATH) $(INSTALL_PREFIX) 
+prebuild-check: $(TMP_PATH) $(INSTALL_PREFIX)
 # Check that all tools where found
 ifndef GIT_BIN
 	$(error The "$(GIT_BIN_NAME)" executable could not be found in your PATH)
@@ -110,15 +120,15 @@ endif
 $(DEP_BIN_DIR):
 	mkdir -p $(DEP_BIN_DIR)
 
-.PHONY: deps 
+.PHONY: deps
 deps: $(DEP_BIN) $(VENDOR_DIR) ## Download build dependencies.
 
 # install dep in a the tmp/bin dir of the repo
-$(DEP_BIN): $(DEP_BIN_DIR) 
+$(DEP_BIN): $(DEP_BIN_DIR)
 	@echo "Installing 'dep' $(DEP_VERSION) at '$(DEP_BIN_DIR)'..."
 	mkdir -p $(DEP_BIN_DIR)
 ifeq ($(UNAME_S),Darwin)
-	@curl -L -s https://github.com/golang/dep/releases/download/$(DEP_VERSION)/dep-darwin-amd64 -o $(DEP_BIN) 
+	@curl -L -s https://github.com/golang/dep/releases/download/$(DEP_VERSION)/dep-darwin-amd64 -o $(DEP_BIN)
 	@cd $(DEP_BIN_DIR) && \
 	curl -L -s https://github.com/golang/dep/releases/download/$(DEP_VERSION)/dep-darwin-amd64.sha256 -o $(DEP_BIN_DIR)/dep-darwin-amd64.sha256 && \
 	echo "1544afdd4d543574ef8eabed343d683f7211202a65380f8b32035d07ce0c45ef  dep" > dep-darwin-amd64.sha256 && \
@@ -133,8 +143,8 @@ endif
 
 $(VENDOR_DIR): Gopkg.toml
 	@echo "checking dependencies with $(DEP_BIN_NAME)"
-	@$(DEP_BIN) ensure -v 
-		
+	@$(DEP_BIN) ensure -v
+
 # -------------------------------------------------------------------
 # Code format/check
 # -------------------------------------------------------------------
@@ -155,21 +165,18 @@ check-go-format: prebuild-check deps ## Exists with an error if there are files 
 	&& exit 1 \
 	|| true
 
-.PHONY: analyze-go-code 
+.PHONY: analyze-go-code
 analyze-go-code: deps golint gocyclo govet ## Run a complete static code analysis using the following tools: golint, gocyclo and go-vet.
 
-## Run gocyclo analysis over the code.
-golint: $(GOLINT_BIN)
+golint: $(GOLINT_BIN) ## Run gocyclo analysis over the code.
 	$(info >>--- RESULTS: GOLINT CODE ANALYSIS ---<<)
 	@$(foreach d,$(GOANALYSIS_DIRS),$(GOLINT_BIN) $d 2>&1 | grep -vEf .golint_exclude || true;)
 
-## Run gocyclo analysis over the code.
-gocyclo: $(GOCYCLO_BIN)
+gocyclo: $(GOCYCLO_BIN) ## Run gocyclo analysis over the code.
 	$(info >>--- RESULTS: GOCYCLO CODE ANALYSIS ---<<)
 	@$(foreach d,$(GOANALYSIS_DIRS),$(GOCYCLO_BIN) -over 10 $d | grep -vEf .golint_exclude || true;)
 
-## Run go vet analysis over the code.
-govet:
+govet: ## Run go vet analysis over the code.
 	$(info >>--- RESULTS: GO VET CODE ANALYSIS ---<<)
 	@$(foreach d,$(GOANALYSIS_DIRS),go tool vet --all $d/*.go 2>&1;)
 
@@ -259,4 +266,3 @@ generate: prebuild-check $(DESIGNS) $(GOAGEN_BIN) $(VENDOR_DIR) ## Generate GOA 
 	$(GOAGEN_BIN) gen -d ${PACKAGE_NAME}/${DESIGN_DIR} --pkg-path=github.com/fabric8-services/fabric8-common/goasupport/status --out app
 	$(GOAGEN_BIN) gen -d ${PACKAGE_NAME}/${DESIGN_DIR} --pkg-path=github.com/fabric8-services/fabric8-common/goasupport/jsonapi_errors_helpers --out app
 	$(GOAGEN_BIN) swagger -d ${PACKAGE_NAME}/${DESIGN_DIR}
-	
