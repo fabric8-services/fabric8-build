@@ -7,9 +7,11 @@ import (
 	"os"
 	"os/user"
 	"runtime"
+	"time"
 
 	"github.com/fabric8-services/fabric8-build-service/app"
 	"github.com/fabric8-services/fabric8-build-service/controller"
+	"github.com/fabric8-services/fabric8-build-service/migration"
 	"github.com/fabric8-services/fabric8-common/configuration"
 	"github.com/fabric8-services/fabric8-common/log"
 	"github.com/fabric8-services/fabric8-common/metric"
@@ -19,6 +21,8 @@ import (
 	"github.com/goadesign/goa/middleware"
 	"github.com/goadesign/goa/middleware/gzip"
 	"github.com/google/gops/agent"
+	"github.com/jinzhu/gorm"
+	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -62,6 +66,23 @@ func main() {
 
 	// Initialized developer mode flag and log level for the logger
 	log.InitializeLogger(config.IsLogJSON(), config.GetLogLevel())
+
+	db := connect(config)
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			log.Panic(context.TODO(), map[string]interface{}{
+				"err": err,
+			}, "failure to close db connexion")
+		}
+	}()
+
+	err = migration.Migrate(db.DB(), config.GetPostgresDatabase())
+	if err != nil {
+		log.Panic(context.TODO(), map[string]interface{}{
+			"err": err,
+		}, "failed migration")
+	}
 
 	// Initialize sentry client
 	haltSentry, err := sentry.InitializeSentryClient(
@@ -146,6 +167,35 @@ func main() {
 		service.LogError("startup", "err", err)
 	}
 
+}
+
+func connect(config *configuration.Registry) *gorm.DB {
+	var err error
+	var db *gorm.DB
+	for {
+		db, err = gorm.Open("postgres", config.GetPostgresConfigString())
+		if err != nil {
+			log.Logger().Errorf("ERROR: Unable to open connection to database %v", err)
+			log.Logger().Infof("Retrying to connect in %v...", config.GetPostgresConnectionRetrySleep())
+			time.Sleep(config.GetPostgresConnectionRetrySleep())
+		} else {
+			break
+		}
+	}
+
+	if config.DeveloperModeEnabled() {
+		db = db.Debug()
+	}
+
+	if config.GetPostgresConnectionMaxIdle() > 0 {
+		log.Logger().Infof("Configured connection pool max idle %v", config.GetPostgresConnectionMaxIdle())
+		db.DB().SetMaxIdleConns(config.GetPostgresConnectionMaxIdle())
+	}
+	if config.GetPostgresConnectionMaxOpen() > 0 {
+		log.Logger().Infof("Configured connection pool max open %v", config.GetPostgresConnectionMaxOpen())
+		db.DB().SetMaxOpenConns(config.GetPostgresConnectionMaxOpen())
+	}
+	return db
 }
 
 func printUserInfo() {
