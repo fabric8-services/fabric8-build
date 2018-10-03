@@ -4,6 +4,7 @@
 set -ex
 
 export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
 REPO_PATH=${GOPATH}/src/github.com/fabric8-services/fabric8-build-service
 
 function setup() {
@@ -37,7 +38,7 @@ function tag_push() {
     local image="$1"
     local tag="$2"
 
-    docker tag ${image} ${tag}
+    docker tag ${image}:${tag}
     docker push ${image}:${tag}
 }
 
@@ -69,8 +70,10 @@ function deploy() {
 function dotest() {
     cd ${REPO_PATH}
 
-    make analyze-go-code
+    make build
     make test-unit
+
+    make analyze-go-code
     make coverage
 
     # Upload to codecov
