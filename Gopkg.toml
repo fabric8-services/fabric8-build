@@ -50,11 +50,10 @@ ignored = [
   "github.com/fabric8-services/fabric8-build-service/app",
 ]
 
-[[constraint]]
-  name = "github.com/fabric8-services/fabric8-common"
-  source = "https://github.com/fabric8-services/fabric8-common.git"
-  branch = "master"
-
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.2.1"

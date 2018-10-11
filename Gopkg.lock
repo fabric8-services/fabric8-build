@@ -51,6 +51,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/fabric8-services/fabric8-auth"
+  packages = ["resource"]
+  revision = "9af23465f289dd7a3f9ffc4c6df7a4c0469617da"
+
+[[projects]]
+  branch = "master"
   name = "github.com/fabric8-services/fabric8-common"
   packages = [
     "configuration",
@@ -62,8 +68,7 @@
     "resource",
     "sentry"
   ]
-  revision = "13443074c10b54b60327441aa49dc321d5cac6b8"
-  source = "https://github.com/fabric8-services/fabric8-common.git"
+  revision = "51e44b47e514721ddaa3fca99e5fb5bc1a6e7eb2"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -74,7 +79,7 @@
 [[projects]]
   name = "github.com/getsentry/raven-go"
   packages = ["."]
-  revision = "master"
+  revision = "084a9de9eb0361fbd5ded14b55c84e5493a5d7f6"
 
 [[projects]]
   name = "github.com/goadesign/goa"
@@ -418,6 +423,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "60d1b5c8c19ba166e8fb3e9fc840019e65fdb5190bcd4b49e6580aa7be94be8f"
+  inputs-digest = "32b8079fe150084ce17611bf0b8700bee82d65ac5e682df972b2307a4dc0a242"
   solver-name = "gps-cdcl"
   solver-version = 1
