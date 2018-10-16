@@ -31,6 +31,11 @@ const (
 	varPostgresConnectionRetrySleep = "postgres.connection.retrysleep"
 	varPostgresConnectionMaxIdle    = "postgres.connection.maxidle"
 	varPostgresConnectionMaxOpen    = "postgres.connection.maxopen"
+
+	varAuthURL      = "auth.url"
+	varAuthClientID = "service.account.id"
+	varClientSecret = "service.account.secret"
+	varAuthTokenKey = "auth.token.key"
 )
 
 // New creates a configuration reader object using a configurable configuration
@@ -99,6 +104,11 @@ func (c *Config) setConfigDefaults() {
 
 	// Timeout of a transaction in minutes
 	c.v.SetDefault(varPostgresTransactionTimeout, 5*time.Minute)
+
+	// Auth
+	c.v.SetDefault(varAuthURL, "http://localhost:8089")
+	c.v.SetDefault(varAuthClientID, "341c283f-0cd7-48a8-9281-4583aceb3617") // TODO: This is using idler creds, add this service example to auth
+	c.v.SetDefault(varClientSecret, "secret")
 }
 
 // DeveloperModeEnabled returns `true` if development related features (as set via default, config file, or environment variable),
@@ -226,4 +236,33 @@ func (c *Config) GetPostgresConfigString() string {
 		c.GetPostgresSSLMode(),
 		c.GetPostgresConnectionTimeout(),
 	)
+}
+
+// GetAuthURL returns Auth service URL
+func (c *Config) GetAuthURL() string {
+	return c.v.GetString(varAuthURL)
+}
+
+// GetAuthGrantType returns the fabric8-auth Grant type used while retrieving
+// user account token
+func (c *Config) GetAuthGrantType() string {
+	return "client_credentials"
+}
+
+// GetAuthClientID returns the tenant's client id used while
+// communicating with fabric8-auth
+func (c *Config) GetAuthClientID() string {
+	return c.v.GetString(varAuthClientID)
+}
+
+// GetClientSecret returns the secret which will be used in
+// conjunction with the tenant client id
+func (c *Config) GetClientSecret() string {
+	return c.v.GetString(varClientSecret)
+}
+
+// GetTokenKey returns the encryption key/passphrase which will be used
+// to decrypt the cluster tokens stored in auth token mgm
+func (c *Config) GetTokenKey() string {
+	return c.v.GetString(varAuthTokenKey)
 }

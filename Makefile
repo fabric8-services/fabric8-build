@@ -11,6 +11,19 @@ DESIGNS := $(shell find $(SOURCE_DIR)/$(DESIGN_DIR) -path $(SOURCE_DIR)/vendor -
 ALL_PKGS_EXCLUDE_PATTERN = 'vendor\|app\|tool\/cli\|design\|client\|test'
 LDFLAGS=-ldflags "-X ${PACKAGE_NAME}/app.Commit=${COMMIT} -X ${PACKAGE_NAME}/app.BuildTime=${BUILD_TIME}"
 
+# Postgres Container
+DB_CONTAINER_NAME = db-build
+DB_CONTAINER_PORT = 5433
+DB_CONTAINER_IMAGE = registry.centos.org/postgresql/postgresql:9.6
+
+AUTH_DB_CONTAINER_NAME = db-auth
+AUTH_DB_CONTAINER_PORT = 5434
+AUTH_DB_CONTAINER_IMAGE = $(DB_CONTAINER_IMAGE)
+
+AUTH_CONTAINER_NAME = auth
+AUTH_CONTAINER_PORT = 8089
+AUTH_CONTAINER_IMAGE = quay.io/openshiftio/fabric8-services-fabric8-auth:latest
+
 # By default reduce the amount of log output from tests
 F8_LOG_LEVEL ?= error
 
@@ -77,20 +90,22 @@ image: clean-artifacts build-linux ## Build the docker image
 # Unittest
 # -------------------------------------------------------------------
 .PHONY: test-unit
-test-unit: prebuild-check docker-run-local-postgres $(SOURCES) ## Runs the unit tests and WITHOUT producing coverage files for each package.
+test-unit: prebuild-check $(SOURCES) generate ## Runs the unit tests and WITHOUT producing coverage files for each package.
 	$(call log-info,"Running test: $@")
 	$(eval TEST_PACKAGES:=$(shell go list ./... | grep -v $(ALL_PKGS_EXCLUDE_PATTERN)))
-	sleep 5  # just so we get the postgres docker starting
+	F8_POSTGRES_PORT="$(DB_CONTAINER_PORT)" \
 	F8_RESOURCE_UNIT_TEST=1 F8_RESOURCE_DATABASE=1 F8_DEVELOPER_MODE_ENABLED=1 \
-	F8_LOG_LEVEL=$(F8_LOG_LEVEL) go test $(GO_TEST_VERBOSITY_FLAG) $(TEST_PACKAGES)
+	F8_LOG_LEVEL=$(F8_LOG_LEVEL) \
+	go test -v $(GO_TEST_VERBOSITY_FLAG) $(TEST_PACKAGES)
 
 .PHONY: coverage
 coverage: prebuild-check deps $(SOURCES) ## Run coverage
 	$(call log-info,"Running coverage: $@")
 	$(eval TEST_PACKAGES:=$(shell go list ./... | grep -v $(ALL_PKGS_EXCLUDE_PATTERN)))
 	@cd $(VENDOR_DIR)/github.com/haya14busa/goverage && go build
-	F8_RESOURCE_UNIT_TEST=1 F8_DEVELOPER_MODE_ENABLED=1 \
-	F8_RESOURCE_UNIT_TEST=1 F8_LOG_LEVEL=$(F8_LOG_LEVEL) F8_RESOURCE_DATABASE=1 \
+	F8_POSTGRES_PORT=$(DB_CONTAINER_PORT) \
+	F8_DEVELOPER_MODE_ENABLED=1 F8_RESOURCE_UNIT_TEST=1 \
+	F8_LOG_LEVEL=$(F8_LOG_LEVEL) F8_RESOURCE_DATABASE=1 \
 	./vendor/github.com/haya14busa/goverage/goverage -v -coverprofile=tmp/coverage.out $(TEST_PACKAGES)
 	@go tool cover -func tmp/coverage.out
 
@@ -237,6 +252,7 @@ clean-generated:
 	-rm -rf ./app
 	-rm -rf ./swagger/
 	-rm -f ./migration/sqlbindata.go
+	-rm -rf ./auth/client
 
 CLEAN_TARGETS += clean-vendor
 .PHONY: clean-vendor
@@ -258,8 +274,8 @@ clean: $(CLEAN_TARGETS) ## Runs all clean-* targets.
 # run in dev mode
 # -------------------------------------------------------------------
 .PHONY: dev
-dev: prebuild-check deps generate $(FRESH_BIN) docker-run-local-postgres ## run the server locally
-	F8_DEVELOPER_MODE_ENABLED=true $(FRESH_BIN)
+dev: prebuild-check deps generate $(FRESH_BIN)  ## run the server locally
+	F8_POSTGRES_PORT=$(DB_CONTAINER_PORT) F8_DEVELOPER_MODE_ENABLED=true $(FRESH_BIN)
 
 # -------------------------------------------------------------------
 # build the binary executable (to ship in prod)
@@ -288,6 +304,7 @@ app/controllers.go: $(DESIGNS) $(GOAGEN_BIN) $(VENDOR_DIR)
 	$(GOAGEN_BIN) gen -d ${PACKAGE_NAME}/${DESIGN_DIR} --pkg-path=github.com/fabric8-services/fabric8-common/goasupport/status --out app
 	$(GOAGEN_BIN) gen -d ${PACKAGE_NAME}/${DESIGN_DIR} \
 		--pkg-path=github.com/fabric8-services/fabric8-common/goasupport/jsonapi_errors_helpers --out app
+	$(GOAGEN_BIN) client -d github.com/fabric8-services/fabric8-auth/design --notool --out auth --pkg client
 
 .PHONY: generate
 ## Generate GOA sources. Only necessary after clean of if changed `design` folder.
@@ -299,11 +316,34 @@ regenerate: clean-generated generate ## Runs the "clean-generated" and the "gene
 # -------------------------------------------------------------------
 # build the binary executable (to ship in prod)
 # -------------------------------------------------------------------
-.PHONE: docker-run-local-postgres
-docker-run-local-postgres: docker-clean-postgres
-	 @[[ "$(docker ps -q --filter "name=postgres")xxx" == xxx ]] && \
-		docker run --name postgres -e POSTGRESQL_ADMIN_PASSWORD=`sed -n '/postgres.password/ { s/.*: //;p ;}' config.yaml` \
-		 -d -p 5432:5432 registry.centos.org/postgresql/postgresql:9.6 >/dev/null
+.PHONY: docker-run
+docker-run: docker-run-local-postgres docker-run-local-auth ## Runs all the docker images
 
+.PHONY: docker-run-local-postgres
+docker-run-local-postgres: docker-clean-postgres
+	$(info >>--- Starting container $(DB_CONTAINER_NAME) ---<<)
+	 @[[ "$(docker ps -q --filter "name=$(DB_CONTAINER_NAME)")xxx" == xxx ]] && \
+		docker run --name $(DB_CONTAINER_NAME) -e POSTGRESQL_ADMIN_PASSWORD=`sed -n '/postgres.password/ { s/.*: //;p ;}' config.yaml` \
+		 -d -p $(DB_CONTAINER_PORT):5432 $(DB_CONTAINER_IMAGE) >/dev/null
+
+.PHONY: docker-clean-postgres
 docker-clean-postgres:
-	@docker rm -f postgres 2>/dev/null || true
+	$(info >>--- Stopping container $(DB_CONTAINER_NAME) ---<<)
+	@docker rm -f $(DB_CONTAINER_NAME) 2>/dev/null || true
+
+
+.PHONY: docker-run-local-auth
+docker-run-local-auth: docker-clean-auth
+	$(info >>--- Starting container $(AUTH_DB_CONTAINER_NAME) ---<<)
+	docker run --name $(AUTH_DB_CONTAINER_NAME) -e POSTGRESQL_ADMIN_PASSWORD=`sed -n '/postgres.password/ { s/.*: //;p ;}' config.yaml` \
+		 --detach -p $(AUTH_DB_CONTAINER_PORT):5432 $(AUTH_DB_CONTAINER_IMAGE) >/dev/null
+	docker run --detach --name $(AUTH_CONTAINER_NAME) -p $(AUTH_CONTAINER_PORT):8089 --link $(AUTH_DB_CONTAINER_NAME):$(AUTH_DB_CONTAINER_NAME) \
+		-e AUTH_POSTGRES_HOST=$(AUTH_DB_CONTAINER_NAME) -e AUTH_POSTGRES_PORT=5432 -e AUTH_DEVELOPER_MODE_ENABLED=true \
+		$(AUTH_CONTAINER_IMAGE)
+
+.PHONY: docker-clean-auth
+docker-clean-auth:
+	$(info >>--- Stopping container $(AUTH_DB_CONTAINER_NAME) ---<<)
+	@docker rm -f $(AUTH_DB_CONTAINER_NAME) 2>/dev/null || true
+	$(info >>--- Stopping container $(AUTH_CONTAINER_NAME) ---<<)
+	@docker rm -f $(AUTH_CONTAINER_NAME) 2>/dev/null || true

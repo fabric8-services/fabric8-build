@@ -33,6 +33,7 @@ required = [
   "github.com/goadesign/goa/encoding/form",
   "github.com/goadesign/goa/goagen",
   "github.com/goadesign/goa/goagen/codegen",
+  "github.com/fabric8-services/fabric8-auth/design",
   "github.com/goadesign/goa/goagen/gen_app",
   "github.com/goadesign/goa/goagen/gen_controller",
   "github.com/goadesign/goa/goagen/gen_swagger",
@@ -48,6 +49,8 @@ required = [
 
 ignored = [
   "github.com/fabric8-services/fabric8-build-service/app",
+  "github.com/fabric8-services/fabric8-tenant/auth/client",
+  "github.com/fabric8-services/fabric8-tenant/auth"
 ]
 
 [prune]
@@ -57,3 +60,9 @@ ignored = [
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.1"
+
+[[constraint]]
+  name = "github.com/dnaeon/go-vcr"
+  #revision= "9d71b8a6df86e00127f96bc8dabc09856ab8afdb"
+  source= "https://github.com/xcoulon/go-vcr/"
+  revision= "fd097d581a47517ee36686adfd3153d6f8eca367"
