@@ -196,12 +196,7 @@ check-go-format: prebuild-check deps ## Exists with an error if there are files 
 analyze-go-code: $(GOLANGCI_BIN) deps generate ## Run golangci analysis over the code.
 	$(info >>--- RESULTS: GOLANGCI CODE ANALYSIS ---<<)
 	@go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	@golangci-lint run --out-format=line-number --enable=golint --enable=govet \
-	 --enable=gocyclo --enable=goconst --enable=unconvert \
-	 --exclude-use-default=false --skip-dirs 'design/*' \
-	 --skip-files 'migration/sqlbindata.go' \
-	 -e '.*which can be annoying to use.*' \
-	 -e '.((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked'
+	@golangci-lint run
 
 .PHONY: format-go-code
 format-go-code: prebuild-check ## Formats any go file that differs from gofmt's style
@@ -320,7 +315,7 @@ regenerate: clean-generated generate ## Runs the "clean-generated" and the "gene
 docker-run: docker-run-local-postgres docker-run-local-auth ## Runs all the docker images
 
 .PHONY: docker-run-local-postgres
-docker-run-local-postgres: docker-clean-postgres
+docker-run-local-postgres: docker-clean-postgres ## Runs db with Docker
 	$(info >>--- Starting container $(DB_CONTAINER_NAME) ---<<)
 	 @[[ "$(docker ps -q --filter "name=$(DB_CONTAINER_NAME)")xxx" == xxx ]] && \
 		docker run --name $(DB_CONTAINER_NAME) -e POSTGRESQL_ADMIN_PASSWORD=`sed -n '/postgres.password/ { s/.*: //;p ;}' config.yaml` \
@@ -333,7 +328,7 @@ docker-clean-postgres:
 
 
 .PHONY: docker-run-local-auth
-docker-run-local-auth: docker-clean-auth
+docker-run-local-auth: docker-clean-auth ## Runs local auth in Docker
 	$(info >>--- Starting container $(AUTH_DB_CONTAINER_NAME) ---<<)
 	docker run --name $(AUTH_DB_CONTAINER_NAME) -e POSTGRESQL_ADMIN_PASSWORD=`sed -n '/postgres.password/ { s/.*: //;p ;}' config.yaml` \
 		 --detach -p $(AUTH_DB_CONTAINER_PORT):5432 $(AUTH_DB_CONTAINER_IMAGE) >/dev/null
