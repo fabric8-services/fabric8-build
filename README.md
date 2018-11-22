@@ -3,7 +3,8 @@ Fabric8-build
 
 Fabric8 build service is the build service providing a REST API for the build operations on [OpenShift.IO](https://openshift.io)
 
-## API
+API
+---
 
 POST `/api/pipelines/environments/$(SPACE_UUID)`
 
@@ -20,11 +21,12 @@ POST `/api/pipelines/environments/$(SPACE_UUID)`
 }
 ```
 
-## Development
+Development
+-----------
 
 ### Deployment
 
-There is a easy way to deploy the whole service and all its dependences on a OpenShift environement, as long you have enough resources and a oc cli cluster access, you can run the script :
+There is a easy way to deploy the whole service and all its dependencies on a OpenShift environment, as long you have enough resources and a oc cli cluster access, you can run the script :
 
 [openshift/deploy-openshift-dev.sh](openshift/deploy-openshift-dev.sh)
 
@@ -34,9 +36,9 @@ and this will deploy the services :
 * env
 * current build
 
-## Building
+### Building
 
-* If you run `make` without argument it would print all the useful target to run wiht a help.
+* If you run `make` without argument it would print all the useful target to run with a help.
 * `make build` will build fabric8-build
 * `make regenerate` will regenerate the goa generated field
 * `make container-run` will start a DB container into docker
@@ -48,13 +50,17 @@ and this will deploy the services :
 
 * You need to make sure your database is populated, you can do it like so :
 
-` make migrate-database`
+```bash
+make migrate-database
+```
 
 This will run all the sql files from [migration/sql-files/*](migration/sql-files/)
 
 * You need to have a auth server in the variable F8_AUTH_URL, if you were using the `deploy-openshift-dev.sh` script you can get the public route and expose it directly like this :
 
+```bash
 `export F8_AUTH_URL="http://$(oc get route auth -o json|jq -r .spec.host)"`
+```
 
 * You may want to add those debug variables :
 
@@ -68,7 +74,7 @@ export F8_ENABLE_DB_LOGS=1
 
 * You can use `make dev` to automate this and have it restarted and recompiled when there is a refresh of the code, this is using a [forked](https://github.com/chmouel/fresh/) version of [fresh](https://github.com/pilu/fresh/).
 
-### Testing service
+### Testing functional
 
 * You would need a token you can generate a token from a dev fabric8auth service like this :
 
@@ -76,7 +82,7 @@ export F8_ENABLE_DB_LOGS=1
 export TOKEN=$(curl -s -L ${F8_AUTH_URL}/api/token/generate -H 'content-type: application/json' | jq -r '.[0].token.access_token')
 ```
 
-and then use it in your curl command, for example to create a pipeline environement :
+and then use it in your curl command, for example to create a pipeline environment :
 
 ```shell
 curl -v -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/vndpipelineenvironment' -d@/tmp/example.json http://localhost:8080/api/pipelines/environments/$(uuid)
@@ -84,16 +90,21 @@ curl -v -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/vndpip
 
 ### Unit tests
 
-* You can run all unit tests with `make test unit`
+* You can run all unit tests with `make test unit`, by default it will run quietly if you need to increase verbosity for debugging you can do like this
+
+```bash
+GO_TEST_VERBOSITY_FLAG="-v" F8_LOG_LEVEL="debug" make test-unit
+```
+
 * If you want to run individual unit test you can do like this :
 
-```
+```bash
 fabric8-build/build $ F8_ENABLE_DB_LOGS=1 F8_POSTGRES_PORT=5433 F8_LOG_LEVEL=1 F8_DEVELOPER_MODE_ENABLED=1 F8_RESOURCE_DATABASE=1 F8_RESOURCE_UNIT_TEST=1 go test -v -run TestEnvironmentController
 ```
 
-In this case `TestEnvironmentController` is the TestSuite which would run the whole things, make sure you have the other environement variable and adjust if needed (i.e: the `POSTGRES PORT`)
+In this case `TestEnvironmentController` is the TestSuite which would run the whole things, make sure you have the other environment variable and adjust if needed (i.e: the `POSTGRES PORT`)
 
 AUTHORS
-=======
+-------
 
 Fabric8-build-team <devtools-build@redhat.com>
