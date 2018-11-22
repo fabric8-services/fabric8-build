@@ -99,6 +99,7 @@ func (c *PipelineEnvironmentController) Create(ctx *app.CreatePipelineEnvironmen
 			ID:           &ppl.ID,
 			Name:         *ppl.Name,
 			Environments: newEnvAttributes,
+			SpaceID:      ppl.SpaceID,
 		},
 	}
 
@@ -111,12 +112,29 @@ func (c *PipelineEnvironmentController) Create(ctx *app.CreatePipelineEnvironmen
 
 // Show runs the show action.
 func (c *PipelineEnvironmentController) Show(ctx *app.ShowPipelineEnvironmentsContext) error {
-	// PipelineEnvironmentController_Show: start_implement
+	spaceID := ctx.SpaceID
 
-	// Put your logic here
+	ppl, err := c.db.Pipeline().Load(ctx, spaceID)
+	if err != nil {
+		return app.JSONErrorResponse(ctx, err)
+	}
 
-	// PipelineEnvironmentController_Show: end_implement
-	res := &app.PipelineEnvironmentSingle{}
+	newEnvAttributes := []*app.EnvironmentAttributes{}
+	for _, pipeline := range ppl.Environment {
+		newEnvAttributes = append(newEnvAttributes, &app.EnvironmentAttributes{
+			EnvUUID: pipeline.EnvironmentID,
+		})
+	}
+
+	res := &app.PipelineEnvironmentSingle{
+		Data: &app.PipelineEnvironments{
+			ID:           &ppl.ID,
+			Name:         *ppl.Name,
+			Environments: newEnvAttributes,
+			SpaceID:      ppl.SpaceID,
+		},
+	}
+
 	return ctx.OK(res)
 }
 

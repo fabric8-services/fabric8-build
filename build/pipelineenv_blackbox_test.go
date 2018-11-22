@@ -33,8 +33,7 @@ func (s *BuildRepositorySuite) SetupSuite() {
 }
 
 func (s *BuildRepositorySuite) TestCreate() {
-	spaceID := uuid.NewV4()
-	envUUID := uuid.NewV4()
+	spaceID, envUUID := uuid.NewV4(), uuid.NewV4()
 	np := newPipeline("pipeline1", spaceID, envUUID)
 	ppl, err := s.buildRepo.Create(context.Background(), np)
 
@@ -58,6 +57,18 @@ func (s *BuildRepositorySuite) TestCreate() {
 	require.EqualError(s.T(), err, "pq: null value in column \"name\" violates not-null constraint")
 	require.Nil(s.T(), ppl)
 
+}
+
+func (s *BuildRepositorySuite) TestShow() {
+	spaceID, envUUID := uuid.NewV4(), uuid.NewV4()
+	newEnv, err := s.buildRepo.Create(context.Background(), newPipeline("pipelineShow", spaceID, envUUID))
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), newEnv)
+
+	env, err := s.buildRepo.Load(context.Background(), spaceID)
+	require.NoError(s.T(), err)
+	assert.NotNil(s.T(), env)
+	assert.Equal(s.T(), newEnv.ID, env.ID)
 }
 
 func newPipeline(name string, spaceID, envUUID uuid.UUID) *build.Pipeline {
