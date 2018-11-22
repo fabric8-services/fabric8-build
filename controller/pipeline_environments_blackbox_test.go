@@ -120,18 +120,17 @@ func (s *PipelineEnvironmentControllerSuite) TestShow() {
 	s.T().Run("ok", func(t *testing.T) {
 		spaceID := uuid.NewV4()
 		payload := newPipelineEnvironmentPayload("osio-stage-show", uuid.NewV4())
-		_, newEnv := test.CreatePipelineEnvironmentsCreated(t, s.ctx, s.svc, s.ctrl, spaceID, payload)
+		_, newEnv := test.CreatePipelineEnvironmentsCreated(t, s.ctx2, s.svc2, s.ctrl2, spaceID, payload)
 		require.NotNil(t, newEnv)
 
-		// TODO: change when we have auth the svc number
-		_, env := test.ShowPipelineEnvironmentsOK(t, s.ctx, s.svc, s.ctrl, spaceID)
+		_, env := test.ShowPipelineEnvironmentsOK(t, s.ctx2, s.svc2, s.ctrl2, spaceID)
 		assert.NotNil(t, env)
 		assert.Equal(t, newEnv.Data.ID, env.Data.ID)
 	})
 
 	s.T().Run("not_found", func(t *testing.T) {
 		envID := uuid.NewV4()
-		_, err := test.ShowPipelineEnvironmentsNotFound(t, s.ctx, s.svc, s.ctrl, envID)
+		_, err := test.ShowPipelineEnvironmentsNotFound(t, s.ctx2, s.svc2, s.ctrl2, envID)
 		assert.NotNil(t, err)
 	})
 }
