@@ -3,7 +3,6 @@ package controller_test
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -47,14 +46,6 @@ func (s *PipelineEnvironmentControllerSuite) SetupSuite() {
 	s.DBTestSuite.SetupSuite()
 
 	s.db = gormapp.NewGormDB(s.DB)
-
-	//TODO(chmouel): really need something better
-	for _, table := range []string{"environments", "pipelines"} {
-		_, err := s.DB.DB().Exec("DELETE FROM " + table + " CASCADE")
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
 
 	// TODO(chmouel): change this when we have jwt support,
 	svc := testauth.UnsecuredService("ppl-test1")
