@@ -17,6 +17,9 @@ var pipelineEnv = a.Type("PipelineEnvironments", func() {
 	a.Attribute("id", d.UUID, "ID of the pipeline environment", func() {
 		a.Example("40bbdd3d-8b5d-4fd6-ac90-7236b669af04")
 	})
+	a.Attribute("spaceID", d.UUID, "ID of the pipeline environment", func() {
+		a.Example("40bbdd3d-8b5d-4fd6-ac90-7236b669af04")
+	})
 	a.Attribute("name", d.String, "The environment name", func() {
 		a.Example("myapp-stage")
 	})

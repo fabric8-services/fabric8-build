@@ -36,7 +36,7 @@ type PipelineEnvironmentControllerSuite struct {
 	prodCtrl *controller.PipelineEnvironmentController
 }
 
-func TestEnvironmentController(t *testing.T) {
+func TestPipelineEnvironmentController(t *testing.T) {
 	config, err := configuration.New("")
 	require.NoError(t, err)
 	suite.Run(t, &PipelineEnvironmentControllerSuite{DBTestSuite: testsuite.NewDBTestSuite(config)})
@@ -87,7 +87,7 @@ func (s *PipelineEnvironmentControllerSuite) createPipelineEnvironmentCtrlNoErro
 
 func (s *PipelineEnvironmentControllerSuite) TestCreate() {
 	s.T().Run("ok", func(t *testing.T) {
-		payload := newPipelineEnvironmentPayload("osio-stage", uuid.NewV4())
+		payload := newPipelineEnvironmentPayload("osio-stage-create", uuid.NewV4())
 		_, newEnv := test.CreatePipelineEnvironmentsCreated(t, s.ctx2, s.svc2, s.ctrl2, uuid.NewV4(), payload)
 		assert.NotNil(t, newEnv)
 		assert.NotNil(t, newEnv.Data.ID)
@@ -95,7 +95,7 @@ func (s *PipelineEnvironmentControllerSuite) TestCreate() {
 	})
 
 	s.T().Run("fail", func(t *testing.T) {
-		payload := newPipelineEnvironmentPayload("osio-stage", uuid.NewV4())
+		payload := newPipelineEnvironmentPayload("osio-stage-create", uuid.NewV4())
 
 		response, err := test.CreatePipelineEnvironmentsInternalServerError(t, s.ctx2, s.svc2, s.ctrl2, uuid.NewV4(), payload)
 		require.NotNil(t, response.Header().Get("Location"))
@@ -114,6 +114,25 @@ func (s *PipelineEnvironmentControllerSuite) TestCreate() {
 		assert.NotNil(t, err)
 	})
 
+}
+
+func (s *PipelineEnvironmentControllerSuite) TestShow() {
+	s.T().Run("ok", func(t *testing.T) {
+		spaceID := uuid.NewV4()
+		payload := newPipelineEnvironmentPayload("osio-stage-show", uuid.NewV4())
+		_, newEnv := test.CreatePipelineEnvironmentsCreated(t, s.ctx2, s.svc2, s.ctrl2, spaceID, payload)
+		require.NotNil(t, newEnv)
+
+		_, env := test.ShowPipelineEnvironmentsOK(t, s.ctx2, s.svc2, s.ctrl2, spaceID)
+		assert.NotNil(t, env)
+		assert.Equal(t, newEnv.Data.ID, env.Data.ID)
+	})
+
+	s.T().Run("not_found", func(t *testing.T) {
+		envID := uuid.NewV4()
+		_, err := test.ShowPipelineEnvironmentsNotFound(t, s.ctx2, s.svc2, s.ctrl2, envID)
+		assert.NotNil(t, err)
+	})
 }
 
 func newPipelineEnvironmentPayload(name string, envUUID uuid.UUID) *app.CreatePipelineEnvironmentsPayload {

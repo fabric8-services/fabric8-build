@@ -2,8 +2,11 @@ package build
 
 import (
 	"context"
+	"time"
 
+	"github.com/fabric8-services/fabric8-common/errors"
 	"github.com/fabric8-services/fabric8-common/gormsupport"
+	"github.com/goadesign/goa"
 	"github.com/jinzhu/gorm"
 	errs "github.com/pkg/errors"
 	"github.com/prometheus/common/log"
@@ -27,6 +30,7 @@ type Environment struct {
 
 type Repository interface {
 	Create(ctx context.Context, pipl *Pipeline) (*Pipeline, error)
+	Load(ctx context.Context, spaceID uuid.UUID) (*Pipeline, error)
 }
 
 type GormRepository struct {
@@ -40,6 +44,8 @@ func NewRepository(db *gorm.DB) *GormRepository {
 }
 
 func (r *GormRepository) Create(ctx context.Context, pipl *Pipeline) (*Pipeline, error) {
+	defer goa.MeasureSince([]string{"goa", "db", "pipeline", "create"}, time.Now())
+
 	err := r.db.Create(pipl).Error
 	if err != nil {
 		log.Error(ctx, map[string]interface{}{"err": err},
@@ -48,4 +54,23 @@ func (r *GormRepository) Create(ctx context.Context, pipl *Pipeline) (*Pipeline,
 	}
 
 	return pipl, nil
+}
+
+func (r *GormRepository) Load(ctx context.Context, spaceID uuid.UUID) (*Pipeline, error) {
+	defer goa.MeasureSince([]string{"goa", "db", "pipeline", "load"}, time.Now())
+	ppl := Pipeline{}
+	tx := r.db.Model(&Pipeline{}).Where("space_id = ?", spaceID).Preload("Environment").First(&ppl)
+	if tx.RecordNotFound() {
+		log.Error(ctx, map[string]interface{}{"space_id": spaceID.String()},
+			"state or known referer was empty")
+		return nil, errors.NewNotFoundError("pipeline", spaceID.String())
+	}
+	// This should not happen as I don't see what kind of other error (as long
+	// schemas are created) than RecordNotFound can we have
+	if tx.Error != nil {
+		log.Error(ctx, map[string]interface{}{"err": tx.Error, "space_id": spaceID.String()},
+			"unable to load the pipeline by spaceID")
+		return nil, errors.NewInternalError(ctx, tx.Error)
+	}
+	return &ppl, nil
 }
