@@ -65,6 +65,8 @@ func (r *GormRepository) Load(ctx context.Context, spaceID uuid.UUID) (*Pipeline
 			"state or known referer was empty")
 		return nil, errors.NewNotFoundError("pipeline", spaceID.String())
 	}
+	// This should not happen as I don't see what kind of other error (as long
+	// schemas are created) than RecordNotFound can we have
 	if tx.Error != nil {
 		log.Error(ctx, map[string]interface{}{"err": tx.Error, "space_id": spaceID.String()},
 			"unable to load the pipeline by spaceID")

@@ -130,9 +130,9 @@ func (s *PipelineEnvironmentControllerSuite) TestShow() {
 	})
 
 	s.T().Run("not_found", func(t *testing.T) {
-		// envID := uuid.NewV4()
-		// _, err := test.ShowPipelineEnvironmentsNotFound(t, s.ctx2, s.svc2, s.ctrl2, envID)
-		// assert.NotNil(t, err)
+		envID := uuid.NewV4()
+		_, err := test.ShowPipelineEnvironmentsNotFound(t, s.ctx, s.svc, s.ctrl, envID)
+		assert.NotNil(t, err)
 	})
 }
 
