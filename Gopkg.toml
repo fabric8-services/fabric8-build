@@ -33,7 +33,6 @@ required = [
   "github.com/goadesign/goa/encoding/form",
   "github.com/goadesign/goa/goagen",
   "github.com/goadesign/goa/goagen/codegen",
-  "github.com/fabric8-services/fabric8-auth/design",
   "github.com/goadesign/goa/goagen/gen_app",
   "github.com/goadesign/goa/goagen/gen_controller",
   "github.com/goadesign/goa/goagen/gen_swagger",
@@ -49,8 +48,6 @@ required = [
 
 ignored = [
   "github.com/fabric8-services/fabric8-build/app",
-  "github.com/fabric8-services/fabric8-tenant/auth/client",
-  "github.com/fabric8-services/fabric8-tenant/auth"
 ]
 
 [prune]

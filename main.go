@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/fabric8-services/fabric8-build/app"
-	"github.com/fabric8-services/fabric8-build/auth"
 	"github.com/fabric8-services/fabric8-build/configuration"
 	"github.com/fabric8-services/fabric8-build/controller"
 	"github.com/fabric8-services/fabric8-build/gormapp"
@@ -24,7 +23,6 @@ import (
 	goalogrus "github.com/goadesign/goa/logging/logrus"
 	"github.com/goadesign/goa/middleware"
 	"github.com/goadesign/goa/middleware/gzip"
-	goajwt "github.com/goadesign/goa/middleware/security/jwt"
 	"github.com/google/gops/agent"
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
@@ -94,22 +92,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Connect to Auth Service
-	authService, err := auth.NewAuthService(config)
-	if err != nil {
-		log.Panic(context.TODO(), map[string]interface{}{
-			"err": err,
-		}, "failed to initialize the auth.Service component")
-	}
-
-	publicKeys, err := authService.GetPublicKeys()
-	if err != nil {
-		log.Panic(context.TODO(), map[string]interface{}{
-			"err":    err,
-			"target": config.GetAuthURL(),
-		}, "failed to fetch public keys from token service")
-	}
-
 	// Initialize sentry client
 	haltSentry, err := sentry.InitializeSentryClient(
 		nil, // will use the `os.Getenv("Sentry_DSN")` instead
@@ -147,8 +129,6 @@ func main() {
 			"fabric8_build_service",
 			metric.WithRequestDurationBucket(prometheus.ExponentialBuckets(0.05, 2, 8))))
 	service.WithLogger(goalogrus.New(log.Logger()))
-	app.UseJWTMiddleware(service, goajwt.New(publicKeys, nil, app.NewJWTSecurity()))
-
 	// service.Use(metric.Recorder())
 
 	// Mount the 'status' controller
