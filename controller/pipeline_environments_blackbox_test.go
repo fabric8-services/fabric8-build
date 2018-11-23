@@ -47,7 +47,6 @@ func (s *PipelineEnvironmentControllerSuite) SetupSuite() {
 
 	s.db = gormapp.NewGormDB(s.DB)
 
-	// TODO(chmouel): change this when we have jwt support,
 	svc := testauth.UnsecuredService("ppl-test1")
 	s.svc = svc
 

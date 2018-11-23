@@ -37,10 +37,7 @@ const (
 	varPostgresConnectionMaxIdle    = "postgres.connection.maxidle"
 	varPostgresConnectionMaxOpen    = "postgres.connection.maxopen"
 
-	varAuthURL      = "auth.url"
-	varAuthClientID = "service.account.id"
-	varClientSecret = "service.account.secret"
-	varAuthTokenKey = "auth.token.key"
+	varAuthURL = "auth.url"
 )
 
 // New creates a configuration reader object using a configurable configuration
@@ -91,8 +88,8 @@ func (c *Config) setConfigDefaults() {
 	c.v.SetDefault(varHTTPAddress, "0.0.0.0:8080")
 	c.v.SetDefault(varMetricsHTTPAddress, "0.0.0.0:8080")
 	c.v.SetDefault(varDeveloperModeEnabled, false)
-	c.v.SetDefault(varCleanTestDataEnabled, true)
 	c.v.SetDefault(varDBLogsEnabled, false)
+	c.v.SetDefault(varCleanTestDataEnabled, true)
 	//---------
 	// Postgres
 	//---------
@@ -113,8 +110,6 @@ func (c *Config) setConfigDefaults() {
 
 	// Auth
 	c.v.SetDefault(varAuthURL, "http://localhost:8089")
-	c.v.SetDefault(varAuthClientID, "341c283f-0cd7-48a8-9281-4583aceb3617") // TODO: This is using idler creds, add this service example to auth
-	c.v.SetDefault(varClientSecret, "secret")
 }
 
 // DeveloperModeEnabled returns `true` if development related features (as set via default, config file, or environment variable),
@@ -267,35 +262,6 @@ func (c *Config) GetAuthURL() string {
 	return c.v.GetString(varAuthURL)
 }
 
-// GetAuthGrantType returns the fabric8-auth Grant type used while retrieving
-// user account token
-func (c *Config) GetAuthGrantType() string {
-	return "client_credentials"
-}
-
-// GetAuthClientID returns the tenant's client id used while
-// communicating with fabric8-auth
-func (c *Config) GetAuthClientID() string {
-	return c.v.GetString(varAuthClientID)
-}
-
-// GetClientSecret returns the secret which will be used in
-// conjunction with the tenant client id
-func (c *Config) GetClientSecret() string {
-	return c.v.GetString(varClientSecret)
-}
-
-// GetTokenKey returns the encryption key/passphrase which will be used
-// to decrypt the cluster tokens stored in auth token mgm
-func (c *Config) GetTokenKey() string {
-	return c.v.GetString(varAuthTokenKey)
-}
-
-// IsCleanTestDataEnabled return true if we want to have clean data enabled
-func (c *Config) IsCleanTestDataEnabled() bool {
-	return c.v.GetBool(varCleanTestDataEnabled)
-}
-
 func (c *Config) GetSentryDSN() string {
 	return c.v.GetString(varSentryDSN)
 }
@@ -303,4 +269,9 @@ func (c *Config) GetSentryDSN() string {
 // Return True if we want to have DB Logs Enabled
 func (c *Config) IsDBLogsEnabled() bool {
 	return c.v.GetBool(varDBLogsEnabled)
+}
+
+// IsCleanTestDataEnabled return true if we want to have clean data enabled
+func (c *Config) IsCleanTestDataEnabled() bool {
+	return c.v.GetBool(varCleanTestDataEnabled)
 }

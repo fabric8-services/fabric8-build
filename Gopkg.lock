@@ -57,10 +57,7 @@
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
-  packages = [
-    ".",
-    "request"
-  ]
+  packages = ["."]
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
   version = "v3.2.0"
 
@@ -77,21 +74,9 @@
   version = "v5.0.1"
 
 [[projects]]
-  name = "github.com/dnaeon/go-vcr"
-  packages = [
-    "cassette",
-    "recorder"
-  ]
-  revision = "fd097d581a47517ee36686adfd3153d6f8eca367"
-
-[[projects]]
   branch = "master"
   name = "github.com/fabric8-services/fabric8-auth"
-  packages = [
-    "design",
-    "errors",
-    "resource"
-  ]
+  packages = ["resource"]
   revision = "5ee62db0407251e886859cb2681876dfb44f64bb"
 
 [[projects]]
@@ -116,24 +101,6 @@
     "token/jwk"
   ]
   revision = "45960af9689499e9f5e5a4ebd142a8189a19ca1e"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/fabric8-services/fabric8-tenant"
-  packages = [
-    "configuration",
-    "test"
-  ]
-  revision = "61661dc89c026fcd02819347c1f4c813273c4f4b"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/fabric8-services/fabric8-wit"
-  packages = [
-    "errors",
-    "rest"
-  ]
-  revision = "52056663d8fadbaa85425a9690f11e65acee7d24"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -445,15 +412,8 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = [
-    "cast5",
     "ed25519",
     "ed25519/internal/edwards25519",
-    "openpgp",
-    "openpgp/armor",
-    "openpgp/elgamal",
-    "openpgp/errors",
-    "openpgp/packet",
-    "openpgp/s2k",
     "pbkdf2"
   ]
   revision = "3d3f9f413869b949e48070b5bc593aa22cc2b8f2"
@@ -522,6 +482,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "02dfb3760d5617054e220f93e9cd197b483682f02682d3c90591c60f0a5326b4"
+  inputs-digest = "4c6ca7e64c41607e5cc807d887a322477f60cfcae9c5282180404b6bfce30f1d"
   solver-name = "gps-cdcl"
   solver-version = 1
