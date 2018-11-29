@@ -179,6 +179,15 @@ func (s *PipelineEnvironmentControllerSuite) TestCreate() {
 		jerr := s.ctrl2.Create(createCtxerr)
 		require.Nil(t, jerr)
 		require.Equal(t, 400, rw.Code)
+
+		failSpaceID := uuid.NewV4()
+		gock.New("http://witservice").
+			Get("/api/spaces/" + failSpaceID.String()).
+			Reply(404)
+		// TODO(chmouel): better testing
+		payload = newPipelineEnvironmentPayload("space-not-found", uuid.NewV4())
+		test.CreatePipelineEnvironmentsInternalServerError(t, s.ctx2, s.svc2, s.ctrl2, space1ID, payload)
+		require.NotNil(t, response.Header().Get("Location"))
 	})
 
 	s.T().Run("unauthorized", func(t *testing.T) {
