@@ -41,16 +41,13 @@ AUTH_CONTAINER_NAME = auth
 AUTH_CONTAINER_PORT = 8089
 AUTH_CONTAINER_IMAGE = quay.io/openshiftio/fabric8-services-fabric8-auth:latest
 
-AUTH_DB_CONTAINER_NAME = db-auth
-AUTH_DB_CONTAINER_IMAGE = $(DB_CONTAINER_IMAGE)
-
 # Env
 ENV_CONTAINER_NAME = f8env
-ENV_CONTAINER_PORT = 8080
 ENV_CONTAINER_IMAGE = quay.io/openshiftio/fabric8-services-fabric8-env:latest
 
-ENV_DB_CONTAINER_NAME = db-env
-ENV_DB_CONTAINER_IMAGE = $(DB_CONTAINER_IMAGE)
+# Wit
+WIT_CONTAINER_NAME = f8wit
+WIT_CONTAINER_IMAGE = quay.io/openshiftio/fabric8-services-fabric8-wit:latest
 
 # By default reduce the amount of log output from tests, set this to debug and GO_TEST_VERBOSITY_FLAG to -v to increase it
 F8_LOG_LEVEL ?= error

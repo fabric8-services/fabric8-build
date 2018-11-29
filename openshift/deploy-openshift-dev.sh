@@ -13,7 +13,7 @@ set -ex
 function readlinkf() { python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' $1 ;}
 cd $(dirname $(readlinkf $0))/../
 
-eval $(make print-env|egrep '^(REGISTRY_URL|AUTH|DB|ENV).*(IMAGE|PORT|NAME)')
+eval $(make print-env|egrep '^(REGISTRY_URL|WIT|AUTH|DB|ENV).*(IMAGE|PORT|NAME)')
 
 oc whoami 2>/dev/null >/dev/null || { echo "oc does not seem to be configured properly"; exit 1 ;}
 
@@ -129,6 +129,18 @@ ENV_SERVICE_VARIABLES=$(cat <<EOF
 EOF
 )
 deploy_sideservice ${ENV_CONTAINER_NAME} ${ENV_CONTAINER_IMAGE} "${ENV_SERVICE_VARIABLES}"
+
+# WIT
+WIT_SERVICE_VARIABLES=$(cat <<EOF
+-e F8_LOG_LEVEL=debug
+-e F8_POSTGRES_HOST=${DC_DB}
+-e F8_POSTGRES_DATABASE=wit
+-e F8_POSTGRES_PORT=5432
+-e F8_DEVELOPER_MODE_ENABLED=true
+-e F8_AUTH_URL=http://${AUTH_CONTAINER_NAME}:${AUTH_CONTAINER_PORT}
+EOF
+)
+deploy_sideservice ${WIT_CONTAINER_NAME} ${WIT_CONTAINER_IMAGE} "${WIT_SERVICE_VARIABLES}"
 
 
 # Build
