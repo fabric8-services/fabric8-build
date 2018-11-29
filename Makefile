@@ -277,6 +277,7 @@ clean-generated:
 	-rm -rf ./app
 	-rm -rf ./swagger/
 	-rm -f ./migration/sqlbindata.go
+	-rm -rf application/wit/witservice
 
 CLEAN_TARGETS += clean-vendor
 .PHONY: clean-vendor
@@ -321,6 +322,7 @@ app/controllers.go: $(DESIGNS) $(GOAGEN_BIN) $(VENDOR_DIR)
 	$(GOAGEN_BIN) app -d ${PACKAGE_NAME}/${DESIGN_DIR}
 	$(GOAGEN_BIN) controller -d ${PACKAGE_NAME}/${DESIGN_DIR} -o controller/ --pkg controller --app-pkg ${PACKAGE_NAME}/app
 	$(GOAGEN_BIN) swagger -d ${PACKAGE_NAME}/${DESIGN_DIR}
+	$(GOAGEN_BIN) client -d github.com/fabric8-services/fabric8-wit/design --notool --pkg witservice -o application/wit
 	$(GOAGEN_BIN) gen -d ${PACKAGE_NAME}/${DESIGN_DIR} --pkg-path=github.com/fabric8-services/fabric8-common/goasupport/status --out app
 	$(GOAGEN_BIN) gen -d ${PACKAGE_NAME}/${DESIGN_DIR} \
 		--pkg-path=github.com/fabric8-services/fabric8-common/goasupport/jsonapi_errors_helpers --out app

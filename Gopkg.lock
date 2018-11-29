@@ -86,6 +86,7 @@
     "convert",
     "errors",
     "goamiddleware",
+    "goasupport",
     "goasupport/jsonapi_errors_helpers",
     "goasupport/status",
     "gormsupport",
@@ -101,6 +102,11 @@
     "token/jwk"
   ]
   revision = "45960af9689499e9f5e5a4ebd142a8189a19ca1e"
+
+[[projects]]
+  name = "github.com/fabric8-services/fabric8-wit"
+  packages = ["design"]
+  revision = "b59d0dc8ae9b2bfea1fb5dc6ff3552c42b735756"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -482,6 +488,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ac7eebf48cc5244e737fb8a811469b2fe37f4a59553f0a2aee834bc2f90a0c56"
+  inputs-digest = "a40eabbe2a85347eff475ae29b4dde96eab5c8f704e421dd2c5f8ba0041db2d9"
   solver-name = "gps-cdcl"
   solver-version = 1

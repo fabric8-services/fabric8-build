@@ -29,6 +29,7 @@ required = [
   "github.com/fabric8-services/fabric8-common/errors", # needed by goa generator
   "github.com/fabric8-services/fabric8-common/goasupport/jsonapi_errors_helpers", # needed by goa generator
   "github.com/fabric8-services/fabric8-common/goasupport/status", # needed by goa generator
+  "github.com/fabric8-services/fabric8-wit/design",
   "github.com/goadesign/goa/cors",
   "github.com/goadesign/goa/encoding/form",
   "github.com/goadesign/goa/goagen",
@@ -57,3 +58,8 @@ ignored = [
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.2.1"
+
+
+[[constraint]]
+  name = "github.com/fabric8-services/fabric8-wit"
+  revision = "b59d0dc8ae9b2bfea1fb5dc6ff3552c42b735756"

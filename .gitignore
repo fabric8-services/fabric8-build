@@ -81,3 +81,4 @@ tool/
 migration/sqlbindata.go
 environment/generated/
 auth/client
+application/wit/witservice

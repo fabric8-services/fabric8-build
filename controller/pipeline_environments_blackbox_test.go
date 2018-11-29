@@ -10,6 +10,7 @@ import (
 
 	"github.com/fabric8-services/fabric8-build/app"
 	"github.com/fabric8-services/fabric8-build/app/test"
+	"github.com/fabric8-services/fabric8-build/application"
 	"github.com/fabric8-services/fabric8-build/configuration"
 	"github.com/fabric8-services/fabric8-build/controller"
 	"github.com/fabric8-services/fabric8-build/gormapp"
@@ -33,6 +34,8 @@ type PipelineEnvironmentControllerSuite struct {
 
 	ctrl  *controller.PipelineEnvironmentController
 	ctrl2 *controller.PipelineEnvironmentController
+
+	svcfactory *application.ServiceFactory
 }
 
 func TestPipelineEnvironmentController(t *testing.T) {
@@ -56,9 +59,10 @@ func (s *PipelineEnvironmentControllerSuite) SetupSuite() {
 	s.ctx = s.svc.Context
 	s.ctx2 = s.svc2.Context
 
+	s.svcFactory = application.ServiceFactory
+
 	s.ctrl = controller.NewPipelineEnvironmentController(s.svc, s.db)
 	s.ctrl2 = controller.NewPipelineEnvironmentController(s.svc2, s.db)
-
 }
 
 // createPipelineEnvironmentCtrlNoErroring we do this one manually cause the one from
