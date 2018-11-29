@@ -2,135 +2,32 @@ package controller_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/fabric8-services/fabric8-build/app"
 	"github.com/fabric8-services/fabric8-build/app/test"
 	"github.com/fabric8-services/fabric8-build/application"
+	"github.com/fabric8-services/fabric8-build/application/wit/witservice"
 	"github.com/fabric8-services/fabric8-build/configuration"
 	"github.com/fabric8-services/fabric8-build/controller"
 	"github.com/fabric8-services/fabric8-build/gormapp"
 	testauth "github.com/fabric8-services/fabric8-common/test/auth"
 	testsuite "github.com/fabric8-services/fabric8-common/test/suite"
 	"github.com/goadesign/goa"
+	guuid "github.com/goadesign/goa/uuid"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/h2non/gock.v1"
 )
-
-// TODO(chmouel): Templates externalize etc...
-var defaultSpaceJson = `{
-  "data": {
-    "attributes": {
-      "created-at": "2018-11-29T15:50:57.981132Z",
-      "description": "",
-      "name": "%s",
-      "updated-at": "2018-11-29T15:50:57.981132Z",
-      "version": 0
-    },
-    "id": "%s",
-    "links": {
-      "backlog": {
-        "meta": {
-          "totalCount": 0
-        },
-        "self": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b/backlog"
-      },
-      "filters": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/filters",
-      "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b",
-      "self": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b",
-      "workitemlinktypes": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spacetemplates/f405fa41-a8bb-46db-8800-2dbe13da1418/workitemlinktypes",
-      "workitemtypes": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spacetemplates/f405fa41-a8bb-46db-8800-2dbe13da1418/workitemtypes"
-    },
-    "relationships": {
-      "areas": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b/areas"
-        }
-      },
-      "backlog": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b/backlog"
-        },
-        "meta": {
-          "totalCount": 0
-        }
-      },
-      "codebases": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b/codebases"
-        }
-      },
-      "collaborators": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b/collaborators"
-        }
-      },
-      "filters": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/filters"
-        }
-      },
-      "iterations": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b/iterations"
-        }
-      },
-      "labels": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b/labels"
-        }
-      },
-      "owned-by": {
-        "data": {
-          "id": "df61d335-a359-48eb-898d-fb4916c52937",
-          "type": "identities"
-        },
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/users/df61d335-a359-48eb-898d-fb4916c52937"
-        }
-      },
-      "space-template": {
-        "data": {
-          "id": "f405fa41-a8bb-46db-8800-2dbe13da1418",
-          "type": "spacetemplates"
-        },
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spacetemplates/f405fa41-a8bb-46db-8800-2dbe13da1418",
-          "self": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spacetemplates/f405fa41-a8bb-46db-8800-2dbe13da1418"
-        }
-      },
-      "workitemlinktypes": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spacetemplates/f405fa41-a8bb-46db-8800-2dbe13da1418/workitemlinktypes"
-        }
-      },
-      "workitems": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spaces/fb0c49c4-7682-46cd-a29c-cb2bff83752b/workitems"
-        }
-      },
-      "workitemtypegroups": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spacetemplates/f405fa41-a8bb-46db-8800-2dbe13da1418/workitemtypegroups"
-        }
-      },
-      "workitemtypes": {
-        "links": {
-          "related": "http://f8wit-fabric8-build.devtools-dev.ext.devshift.net/api/spacetemplates/f405fa41-a8bb-46db-8800-2dbe13da1418/workitemtypes"
-        }
-      }
-   },
-    "type": "spaces"
-  }
-}`
 
 type PipelineEnvironmentControllerSuite struct {
 	testsuite.DBTestSuite
@@ -177,16 +74,49 @@ func (s *PipelineEnvironmentControllerSuite) SetupSuite() {
 	os.Setenv("F8_WIT_URL", "http://witservice")
 	// gock.Observe(gock.DumpRequest)
 
-	defer func() {
-		gock.OffAll()
-	}()
+	defer gock.OffAll()
+}
+
+func (s *PipelineEnvironmentControllerSuite) createSpaceJson(spaceName string, spaceID uuid.UUID) string {
+	// TODO: Test ownership
+	identityID := guuid.NewV4()
+	desc := "Description of " + spaceName
+	version := 0
+	spaceTime := time.Now()
+	_spaceID, _ := guuid.FromString(spaceID.String())
+
+	wt := witservice.SpaceSingle{
+		Data: &witservice.Space{
+			ID: &_spaceID,
+			Attributes: &witservice.SpaceAttributes{
+				CreatedAt:   &spaceTime,
+				Description: &desc,
+				Name:        &spaceName,
+				UpdatedAt:   &spaceTime,
+				Version:     &version,
+			},
+			Links: &witservice.GenericLinksForSpace{},
+			Type:  "spaces",
+			Relationships: &witservice.SpaceRelationships{
+				OwnedBy: &witservice.SpaceOwnedBy{
+					Data: &witservice.IdentityRelationData{
+						ID:   &identityID,
+						Type: "identities",
+					},
+				},
+			},
+		},
+	}
+
+	b, _ := json.Marshal(wt)
+	return string(b)
 }
 
 func (s *PipelineEnvironmentControllerSuite) createGockONSpace(spaceID uuid.UUID, spaceName string) {
 	gock.New("http://witservice").
 		Get("/api/spaces/" + spaceID.String()).
 		Reply(200).
-		JSON(fmt.Sprintf(defaultSpaceJson, "space1", spaceID))
+		JSON(s.createSpaceJson(spaceName, spaceID))
 }
 
 // createPipelineEnvironmentCtrlNoErroring we do this one manually cause the one from
