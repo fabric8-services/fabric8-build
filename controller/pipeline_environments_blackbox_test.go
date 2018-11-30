@@ -184,10 +184,20 @@ func (s *PipelineEnvironmentControllerSuite) TestCreate() {
 		gock.New("http://witservice").
 			Get("/api/spaces/" + failSpaceID.String()).
 			Reply(404)
-		// TODO(chmouel): better testing
 		payload = newPipelineEnvironmentPayload("space-not-found", uuid.NewV4())
-		test.CreatePipelineEnvironmentsInternalServerError(t, s.ctx2, s.svc2, s.ctrl2, space1ID, payload)
+		response, err = test.CreatePipelineEnvironmentsNotFound(t, s.ctx2, s.svc2, s.ctrl2, failSpaceID, payload)
 		require.NotNil(t, response.Header().Get("Location"))
+		assert.Regexp(s.T(), ".*not_found.*", err.Errors)
+
+		failSpaceID = uuid.NewV4()
+		gock.New("http://witservice").
+			Get("/api/spaces/" + failSpaceID.String()).
+			Reply(422)
+		payload = newPipelineEnvironmentPayload("space-unkown-error", uuid.NewV4())
+		response, err = test.CreatePipelineEnvironmentsInternalServerError(t, s.ctx2, s.svc2, s.ctrl2, failSpaceID, payload)
+		require.NotNil(t, response.Header().Get("Location"))
+		assert.Regexp(s.T(), ".*unknown_error.*", err.Errors)
+
 	})
 
 	s.T().Run("unauthorized", func(t *testing.T) {

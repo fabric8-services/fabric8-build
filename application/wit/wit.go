@@ -8,10 +8,11 @@ import (
 	"github.com/fabric8-services/fabric8-build/application/rest"
 	"github.com/fabric8-services/fabric8-build/application/wit/witservice"
 	"github.com/fabric8-services/fabric8-build/configuration"
+	commonerr "github.com/fabric8-services/fabric8-common/errors"
 	"github.com/fabric8-services/fabric8-common/goasupport"
+	"github.com/pkg/errors"
 
 	"github.com/goadesign/goa/uuid"
-	"github.com/pkg/errors"
 	"github.com/prometheus/common/log"
 )
 
@@ -56,7 +57,11 @@ func (s *WITServiceImpl) GetSpace(ctx context.Context, spaceID string) (space *S
 			"response_status": res.Status,
 			"response_body":   bodyString,
 		}, "unable to get space from WIT")
-		return nil, errors.Errorf("unable to get space from WIT. Response status: %s. Response body: %s", res.Status, bodyString)
+		if res.StatusCode == 404 {
+			return nil, commonerr.NewNotFoundErrorFromString("Cannot find space: " + spaceID)
+		} else {
+			return nil, errors.Errorf("unable to get space from WIT. Response status: %s. Response body: %s", res.Status, bodyString)
+		}
 	}
 
 	spaceSingle, err := remoteWITService.DecodeSpaceSingle(res)
