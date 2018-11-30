@@ -52,7 +52,7 @@ func TestPipelineEnvironmentController(t *testing.T) {
 
 func (s *PipelineEnvironmentControllerSuite) SetupSuite() {
 	s.DBTestSuite.SetupSuite()
-	config, err := configuration.New("")
+	config, _ := configuration.New("")
 
 	s.db = gormapp.NewGormDB(s.DB)
 
