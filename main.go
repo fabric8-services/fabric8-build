@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/fabric8-services/fabric8-build/app"
+	"github.com/fabric8-services/fabric8-build/application"
 	"github.com/fabric8-services/fabric8-build/configuration"
 	"github.com/fabric8-services/fabric8-build/controller"
 	"github.com/fabric8-services/fabric8-build/gormapp"
@@ -123,6 +124,9 @@ func main() {
 	service.Use(tokenCtxMW)
 	service.Use(token.InjectTokenManager(tokenMgr))
 
+	// Create the service factory
+	svcFactory := application.NewServiceFactory(config)
+
 	// record HTTP request metrics in prometh
 	service.Use(
 		metric.Recorder(
@@ -138,7 +142,7 @@ func main() {
 	appDB := gormapp.NewGormDB(db)
 
 	// Mount the 'pipeline environment map' controller
-	pipelineEnvCtrl := controller.NewPipelineEnvironmentController(service, appDB)
+	pipelineEnvCtrl := controller.NewPipelineEnvironmentController(service, appDB, svcFactory)
 	app.MountPipelineEnvironmentsController(service, pipelineEnvCtrl)
 
 	log.Logger().Infoln("Git Commit SHA: ", app.Commit)

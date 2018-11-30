@@ -17,14 +17,16 @@ import (
 // PipelineEnvironmentController implements the PipelineEnvironment resource.
 type PipelineEnvironmentController struct {
 	*goa.Controller
-	db application.DB
+	db         application.DB
+	svcFactory application.ServiceFactory
 }
 
 // NewPipelineEnvironmentController creates a PipelineEnvironment controller.
-func NewPipelineEnvironmentController(service *goa.Service, db application.DB) *PipelineEnvironmentController {
+func NewPipelineEnvironmentController(service *goa.Service, db application.DB, svcFactory application.ServiceFactory) *PipelineEnvironmentController {
 	return &PipelineEnvironmentController{
 		Controller: service.NewController("PipelineEnvironmentController"),
 		db:         db,
+		svcFactory: svcFactory,
 	}
 }
 
@@ -139,7 +141,11 @@ func (c *PipelineEnvironmentController) Show(ctx *app.ShowPipelineEnvironmentsCo
 }
 
 func (c *PipelineEnvironmentController) checkSpaceExist(ctx context.Context, spaceID string) error {
-	// TODO check if space exists
-	// TODO check if space owner is the caller
+	// TODO(chmouel): Make sure we have the rights for that space
+	// TODO(chmouel): Better error reporting when NOTFound
+	_, err := c.svcFactory.WITService().GetSpace(ctx, spaceID)
+	if err != nil {
+		return errs.Wrapf(err, "failed to get space id: %s from wit", spaceID)
+	}
 	return nil
 }

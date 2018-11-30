@@ -24,6 +24,10 @@ const (
 	varMetricsHTTPAddress   = "metrics.http.address"
 	varSentryDSN            = "sentry.dsn"
 
+	// External f8 services
+	varAuthURL = "auth.url"
+	varWITURL  = "wit.url"
+
 	// Postgres
 	varPostgresHost                 = "postgres.host"
 	varPostgresPort                 = "postgres.port"
@@ -36,8 +40,6 @@ const (
 	varPostgresConnectionRetrySleep = "postgres.connection.retrysleep"
 	varPostgresConnectionMaxIdle    = "postgres.connection.maxidle"
 	varPostgresConnectionMaxOpen    = "postgres.connection.maxopen"
-
-	varAuthURL = "auth.url"
 )
 
 // New creates a configuration reader object using a configurable configuration
@@ -271,4 +273,10 @@ func (c *Config) IsDBLogsEnabled() bool {
 // IsCleanTestDataEnabled return true if we want to have clean data enabled
 func (c *Config) IsCleanTestDataEnabled() bool {
 	return c.v.GetBool(varCleanTestDataEnabled)
+}
+
+// GetWITURL returns the WIT URL where WIT is running
+// If AUTH_WIT_URL is not set and Auth in not in Dev Mode then we calculate the URL from the Auth Service URL domain
+func (c *Config) GetWITURL() (string, error) {
+	return c.v.GetString(varWITURL), nil
 }
