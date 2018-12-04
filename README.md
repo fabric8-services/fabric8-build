@@ -25,7 +25,6 @@ and this will deploy the services :
 with all the configuration needed,
 The script is not idempotent it will just clean itself on multiple runs,
 
-
 ### Building
 
 #### Prerequisites
